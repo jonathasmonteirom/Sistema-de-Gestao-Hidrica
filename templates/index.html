@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Monitoramento de Cisternas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Gestão Hídrica e Logística de Carros-Pipa</h1>
+                <p>Monitoramento de cisternas e priorização de abastecimento</p>
+            </div>
+            <div class="status-badge">
+                <span class="dot"></span>
+                Atualização em tempo real
+            </div>
+        </header>
+
+        <div class="section-title">
+            <span>Cisternas Monitoradas</span>
+        </div>
+        <div id="lista-reservatorios" class="grid-reservatorios">
+            <div class="card">Carregando reservatórios..</div>
+        </div>
+
+        <div class="section-title">
+            <span>Fila de Prioridade — Carros-Pipa</span>
+            <div class="strategy-controls">
+                <label for="criterio-strategy">Estratégia (Strategy):</label>
+                <select id="criterio-strategy">
+                    <option value="urgencia">Urgência (Menor tempo restante)</option>
+                    <option value="familias">Impacto Social (Mais famílias)</option>
+                    <option value="essencial">Serviço Essencial (Escolas / Saúde)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Comunidade / Cisterna</th>
+                        <th>Famílias</th>
+                        <th>Serviço Essencial</th>
+                        <th>Tempo Restante</th>
+                        <th>Data do Alerta</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-fila">
+                    <tr>
+                        <td colspan="7" class="empty-state">Carregando fila de atendimento..</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
