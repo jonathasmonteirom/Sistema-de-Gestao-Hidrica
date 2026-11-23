@@ -1,4 +1,5 @@
 import asyncio
+import math
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -14,14 +15,20 @@ PORTA_SERIAL_PADRAO = "COM3"
 BAUD_RATE = 9600
 INTERVALO_LEITURA_SEGUNDOS = 3.0
 
-DISTANCIA_FUNDO_CM = 100.0
-ALTURA_MAXIMA_AGUA_CM = 80.0
+#Medidas do copo (centímetros)
+DISTANCIA_FUNDO_CM = 21.0      #Distância do sensor até o fundo
+DIAMETRO_COPO_CM = 8.5         #Diametro da boca
+ALTURA_MAXIMA_AGUA_CM = 12.0   #Altura máxima de água
+
+RAIO_COPO_CM = DIAMETRO_COPO_CM / 2.0
 
 ENVIAR_PARA_FLASK = True
 URL_BASE_FLASK = "http://127.0.0.1:5000"
 ENDERECO_IP_SENSOR = "192.168.1.204"
-NOME_RESERVATORIO = "Cisterna Bancada (Arduino)"
-CAPACIDADE_MAXIMA_LITROS = 100.0
+NOME_RESERVATORIO = "Cisterna Estrutura (Arduino)"
+CAPACIDADE_MAXIMA_LITROS = round(
+    (math.pi * (RAIO_COPO_CM ** 2) * ALTURA_MAXIMA_AGUA_CM) / 1000.0, 3
+)
 FAMILIAS_ATENDIDAS = 45
 TEM_SERVICO_ESSENCIAL = True
 
@@ -35,7 +42,6 @@ status_serial = {
 }
 
 def detectar_porta_arduino() -> str:
-    """Usa a porta padrão configurada ou tenta localizar um Arduino na USB."""
     portas = list(serial.tools.list_ports.comports())
     for p in portas:
         if p.device.upper() == PORTA_SERIAL_PADRAO.upper():
@@ -47,8 +53,9 @@ def detectar_porta_arduino() -> str:
     return PORTA_SERIAL_PADRAO
 
 def calcular_nivel(distancia_cm: float) -> dict:
-    """Converte a distância medida pelo HC-SR04 no formato esperado pelo SensorUltrassonicoCmAdapter."""
     coluna_agua_cm = max(0.0, min(ALTURA_MAXIMA_AGUA_CM, DISTANCIA_FUNDO_CM - distancia_cm))
+    volume_ml = math.pi * (RAIO_COPO_CM ** 2) * coluna_agua_cm
+    volume_litros = volume_ml / 1000.0
     percentual = (
         round((coluna_agua_cm / ALTURA_MAXIMA_AGUA_CM) * 100.0, 1)
         if ALTURA_MAXIMA_AGUA_CM > 0
@@ -60,12 +67,13 @@ def calcular_nivel(distancia_cm: float) -> dict:
         "distancia_cm": round(distancia_cm, 1),
         "nivel_cm": round(coluna_agua_cm, 1),
         "altura_maxima_cm": ALTURA_MAXIMA_AGUA_CM,
+        "volume_ml": round(volume_ml, 1),
+        "volume_litros_calculado": round(volume_litros, 3),
         "percentual": percentual,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
     }
 
 def garantir_cadastro_reservatorio() -> None:
-    """Cadastra ou atualiza a cisterna física no Flask antes de enviar medições."""
     global reservatorio_registrado
     if reservatorio_registrado or not ENVIAR_PARA_FLASK:
         return
@@ -85,7 +93,6 @@ def garantir_cadastro_reservatorio() -> None:
         pass
 
 def enviar_para_backend_flask(payload: dict) -> None:
-    """Envia a leitura para o Flask sem interromper o FastAPI caso o Flask esteja offline."""
     if not ENVIAR_PARA_FLASK:
         return
     garantir_cadastro_reservatorio()
@@ -101,7 +108,6 @@ def enviar_para_backend_flask(payload: dict) -> None:
         pass
 
 def consultar_sensor_serial(conexao: serial.Serial) -> Optional[float]:
-    """Envia 'X' pela porta Serial e lê a resposta numérica do Arduino."""
     conexao.reset_input_buffer()
     conexao.write(b"X")
     resposta = conexao.readline().decode("utf-8", errors="ignore").strip()
@@ -113,9 +119,7 @@ def consultar_sensor_serial(conexao: serial.Serial) -> Optional[float]:
     except ValueError:
         return None
 
-
 async def loop_leitura_arduino() -> None:
-    """Tarefa em segundo plano que mantém a comunicação contínua com o Arduino."""
     global ultima_leitura
     conexao: Optional[serial.Serial] = None
 
@@ -140,7 +144,8 @@ async def loop_leitura_arduino() -> None:
                 historico_leituras.append(registro)
                 print(
                     f"[Leitura] Distância: {registro['distancia_cm']} cm | "
-                    f"Nível: {registro['nivel_cm']} cm ({registro['percentual']}%)"
+                    f"Nível: {registro['nivel_cm']} cm | "
+                    f"Volume: {registro['volume_ml']} mL ({registro['percentual']}%)"
                 )
                 await asyncio.to_thread(enviar_para_backend_flask, registro)
             else:
@@ -149,7 +154,7 @@ async def loop_leitura_arduino() -> None:
         except serial.SerialException as erro:
             status_serial["conectado"] = False
             status_serial["ultimo_erro"] = str(erro)
-            print(f"[Erro Serial] {erro}. Tentando reconectar...")
+            print(f"[Erro Serial] {erro}. Tentando reconectar..")
             if conexao is not None:
                 try:
                     conexao.close()

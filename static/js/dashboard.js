@@ -55,7 +55,7 @@ async function carregarReservatorios() {
                     </div>
                     <div class="progress-wrapper">
                         <div class="progress-info">
-                            <span>${volume.toFixed(1)} L / ${r.capacidade_maxima_litros} L</span>
+                            <span>${volume.toFixed(2)} L / ${r.capacidade_maxima_litros} L</span>
                             <span>${pct.toFixed(0)}%</span>
                         </div>
                         <div class="progress-bar">
