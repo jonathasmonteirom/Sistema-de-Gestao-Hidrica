@@ -16,9 +16,9 @@ BAUD_RATE = 9600
 INTERVALO_LEITURA_SEGUNDOS = 3.0
 
 #Medidas do copo (centímetros)
-DISTANCIA_FUNDO_CM = 21.0      #Distância do sensor até o fundo
-DIAMETRO_COPO_CM = 8.5         #Diametro da boca
-ALTURA_MAXIMA_AGUA_CM = 12.0   #Altura máxima de água
+DISTANCIA_FUNDO_CM = 26.0      #Distância do sensor até o fundo
+DIAMETRO_COPO_CM = 10.0         #Diametro da boca
+ALTURA_MAXIMA_AGUA_CM = 17.0   #Altura máxima de água
 
 RAIO_COPO_CM = DIAMETRO_COPO_CM / 2.0
 
